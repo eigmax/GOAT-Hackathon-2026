@@ -10,6 +10,7 @@
 - Dashboard: https://goat-hackathon-2026.vercel.app
 - GOAT Docs: https://docs.goat.network
 - AgentKit: https://github.com/GOATNetwork/agentkit
+- X402: https://github.com/GOATNetwork/x402
 - GOAT Faucet: https://bridge.testnet3.goat.network/faucet
 - Ziren: https://docs.zkm.io
 
