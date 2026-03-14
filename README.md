@@ -1,5 +1,9 @@
 # GOAT-Hackathon-2026
 
+## Submit your demo
+
+Link: [https://docs.google.com/spreadsheets/d/14nyZH7rdU5vu2oeFv2vXEPnOtyHUEEIP4CTBhE84ENU/edit?gid=0#gid=0](https://docs.google.com/spreadsheets/d/14nyZH7rdU5vu2oeFv2vXEPnOtyHUEEIP4CTBhE84ENU/edit?gid=0#gid=0)
+
 ## OpenClaw
 
 - Clawup: http://docs.clawup.org/
