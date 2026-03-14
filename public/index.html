@@ -196,21 +196,24 @@ async function loadAgents() {
       const owner   = '0x'+log.topics[2].slice(26)
       const block   = parseInt(log.blockNumber,16)
       const txHash  = log.transactionHash
-      let name=`Agent #${agentId}`, desc='', x402=false, svcs=[]
+      let name=`Agent #${agentId}`, desc='', x402=false, svcs=[], uri=''
       try {
         const hex = log.data.slice(2)
         const len = parseInt(hex.slice(64,128),16)
         const raw = hex.slice(128, 128+len*2)
-        const uri = decodeURIComponent(raw.match(/.{2}/g).map(b=>'%'+b).join(''))
+        uri = decodeURIComponent(raw.match(/.{2}/g).map(b=>'%'+b).join(''))
         if (uri.startsWith('data:application/json;base64,')) {
           const j = JSON.parse(atob(uri.split(',')[1]))
+          name=j.name||name; desc=j.description||''; x402=j.x402Support||false; svcs=j.services||[]
+        } else if (uri.startsWith('{')) {
+          const j = JSON.parse(uri)
           name=j.name||name; desc=j.description||''; x402=j.x402Support||false; svcs=j.services||[]
         }
       } catch {}
       const chain = log._chain || 'mainnet'
       const explorerBase = chain==='testnet3' ? 'https://explorer.testnet3.goat.network' : 'https://explorer.goat.network'
       agentWallets.add(owner.toLowerCase())
-      next.push({agentId,owner,name,desc,x402,svcs,block,txHash,chain,explorerBase})
+      next.push({agentId,owner,name,desc,x402,svcs,block,txHash,chain,explorerBase,uri})
     }
 
     const added = next.filter(a=>!agents.find(b=>b.agentId===a.agentId&&b.chain===a.chain))
@@ -218,6 +221,17 @@ async function loadAgents() {
     agents = next
     renderAgents()
     updateStats()
+
+    // Fetch external URIs to resolve names
+    const toFetch = agents.filter(a=>a.uri && a.name===`Agent #${a.agentId}` && (a.uri.startsWith('http://') || a.uri.startsWith('https://')))
+    if (toFetch.length) {
+      Promise.allSettled(toFetch.map(a =>
+        fetch(a.uri, {signal: AbortSignal.timeout(5000)})
+          .then(r=>r.text())
+          .then(text=>{const j=JSON.parse(text); if(j.name){a.name=j.name; a.desc=j.description||a.desc; a.x402=j.x402Support||a.x402; a.svcs=j.services||a.svcs}})
+          .catch(()=>{})
+      )).then(()=>{ renderAgents(); updateStats() })
+    }
   } catch(e) { console.error('agents',e) }
 }
 
