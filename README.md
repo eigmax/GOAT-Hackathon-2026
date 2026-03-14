@@ -5,20 +5,20 @@
 - Clawup: http://docs.clawup.org/
 - Official Docs: https://docs.openclaw.ai/
 
-
 ## GOAT Network
-Dashboard URL: https://goat-hackathon-2026.vercel.app
-GOAT Docs: https://docs.goat.network
-AgentKit: https://github.com/GOATNetwork/agentkit
-GOAT Faucet: https://bridge.testnet3.goat.network/faucet
-Ziren: https://docs.zkm.io
 
-### ERC-8004 Agent Registration & Dashboard
+- Dashboard: https://goat-hackathon-2026.vercel.app
+- GOAT Docs: https://docs.goat.network
+- AgentKit: https://github.com/GOATNetwork/agentkit
+- GOAT Faucet: https://bridge.testnet3.goat.network/faucet
+- Ziren: https://docs.zkm.io
+
+## ERC-8004 Agent Registration & Dashboard
 
 - **Dashboard**: Live view of registered agents, x402 payment feed, and agent-to-agent payments on GOAT Network
 - **Register**: One-click ERC-8004 agent registration via MetaMask on GOAT Testnet3
 
-### Quick Start
+## Quick Start
 
 ```bash
 cd public
