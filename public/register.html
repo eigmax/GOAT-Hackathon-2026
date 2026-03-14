@@ -80,6 +80,8 @@
   <a href="/" class="back">← Back to Dashboard</a>
 
   <h4>Agent URI</h4>
+  <p style="font-size:11px;color:var(--yellow);margin-bottom:8px">Below is a test example — please replace with your own URI before registering.</p>
+  <pre style="font-size:10px;color:var(--muted);margin-bottom:10px;padding:8px 12px">Example: https://gist.githubusercontent.com/eigmax/9c4bd5b5e3a9159aa3995c360a5d854e/raw/868bbca6ba198084fbedb4abfc89139a935ba6a4/gistfile1.txt</pre>
   <div class="input-row">
     <input id="uriInput" type="text" placeholder="Enter your agent URI">
     <button id="preview" class="btn btn-secondary">Preview</button>
@@ -113,7 +115,7 @@
   const exampleURI = "https://gist.githubusercontent.com/eigmax/9c4bd5b5e3a9159aa3995c360a5d854e/raw/868bbca6ba198084fbedb4abfc89139a935ba6a4/gistfile1.txt";
   const to = "0x556089008Fc0a60cD09390Eca93477ca254A5522"; // Testnet3 Identity Registry
 
-  uriInput.value = exampleURI;
+  uriInput.value = "";
 
   function loadPreview() {
     const uri = uriInput.value.trim();
