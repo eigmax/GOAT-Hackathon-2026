@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lucky Draw — GOAT Hackathon 2026</title>
+<style>
+  :root {
+    --bg:#0a0a0f;--surface:#111118;--surface2:#1a1a24;--border:#2a2a3a;
+    --accent:#7c3aed;--accent2:#06b6d4;--green:#10b981;--yellow:#f59e0b;
+    --red:#ef4444;--text:#e2e8f0;--muted:#64748b;--goat:#f59e0b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'SF Mono','Fira Code',monospace;min-height:100vh;display:flex;flex-direction:column}
+  header{border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:12px;background:var(--surface)}
+  .logo{font-size:22px}
+  .ht{flex:1}.ht h1{font-size:16px;font-weight:700}.ht p{font-size:11px;color:var(--muted);margin-top:2px}
+
+  .container{max-width:600px;margin:0 auto;padding:40px 20px;flex:1;display:flex;flex-direction:column;align-items:center}
+
+  .range-row{display:flex;gap:12px;align-items:center;margin-bottom:24px}
+  .range-row label{font-size:12px;color:var(--muted)}
+  .range-row input{
+    width:100px;padding:10px 12px;font-size:16px;font-family:inherit;text-align:center;
+    background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;outline:none;
+  }
+  .range-row input:focus{border-color:var(--accent)}
+  .range-row span{font-size:18px;color:var(--muted)}
+
+  .count-row{display:flex;gap:12px;align-items:center;margin-bottom:32px}
+  .count-row label{font-size:12px;color:var(--muted)}
+  .count-row input{
+    width:80px;padding:10px 12px;font-size:16px;font-family:inherit;text-align:center;
+    background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;outline:none;
+  }
+  .count-row input:focus{border-color:var(--accent)}
+
+  #draw{
+    padding:16px 48px;border-radius:10px;font-size:18px;font-weight:700;font-family:inherit;
+    cursor:pointer;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
+    transition:transform .15s,box-shadow .15s;
+  }
+  #draw:hover{transform:scale(1.05);box-shadow:0 0 30px rgba(124,58,237,.4)}
+  #draw:active{transform:scale(.97)}
+
+  .result-area{margin-top:40px;text-align:center;min-height:120px}
+
+  #rolling{
+    font-size:72px;font-weight:700;
+    background:linear-gradient(135deg,var(--accent),var(--accent2),var(--green));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    min-height:90px;line-height:90px;
+  }
+
+  #history{margin-top:32px;width:100%}
+  #history h4{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+  .history-list{display:flex;flex-wrap:wrap;gap:8px}
+  .history-item{
+    padding:6px 14px;border-radius:6px;font-size:14px;font-weight:600;
+    background:var(--surface2);border:1px solid var(--border);color:var(--accent2);
+    animation:pop .3s ease;
+  }
+  @keyframes pop{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+
+  footer{border-top:1px solid var(--border);padding:10px 20px;font-size:10px;color:var(--muted);display:flex;gap:16px;align-items:center;background:var(--surface)}
+  footer .fs{flex:1}
+  footer a{color:var(--accent2);text-decoration:none}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><img src="https://cdn.prod.website-files.com/6669a2e2b7f624149423b9be/6669a5a551ddf74e6fd005e0_goat%20network%20logo.svg" alt="GOAT" style="height:28px"></div>
+  <div class="ht">
+    <h1>Lucky Draw</h1>
+    <p>GOAT Hackathon 2026</p>
+  </div>
+  <a href="/" style="font-size:12px;color:var(--accent2);text-decoration:none">Dashboard</a>
+</header>
+
+<div class="container">
+  <div class="range-row">
+    <label>From</label>
+    <input type="number" id="minVal" value="1">
+    <span>—</span>
+    <label>To</label>
+    <input type="number" id="maxVal" value="100">
+  </div>
+  <div class="count-row">
+    <label>Winners</label>
+    <input type="number" id="countVal" value="1" min="1">
+  </div>
+
+  <button id="draw">DRAW</button>
+
+  <div class="result-area">
+    <div id="rolling"></div>
+  </div>
+
+  <div id="history" style="display:none">
+    <h4>History</h4>
+    <div class="history-list" id="historyList"></div>
+  </div>
+</div>
+
+<footer>
+  <span><img src="https://cdn.prod.website-files.com/6669a2e2b7f624149423b9be/6669a5a551ddf74e6fd005e0_goat%20network%20logo.svg" alt="GOAT" style="height:14px;vertical-align:middle"> Built on GOAT Network</span>
+  <div class="fs"></div>
+  <a href="/">Dashboard</a>
+</footer>
+
+<script>
+  const rolling = document.getElementById('rolling');
+  const historyEl = document.getElementById('history');
+  const historyList = document.getElementById('historyList');
+  let isRunning = false;
+
+  // Cryptographically secure random integer in [0, max)
+  function secureRandom(max) {
+    const arr = new Uint32Array(1);
+    crypto.getRandomValues(arr);
+    return arr[0] % max;
+  }
+
+  document.getElementById('draw').onclick = () => {
+    if (isRunning) return;
+    const min = parseInt(document.getElementById('minVal').value) || 1;
+    const max = parseInt(document.getElementById('maxVal').value) || 100;
+    const count = Math.max(1, parseInt(document.getElementById('countVal').value) || 1);
+
+    if (min > max) { rolling.textContent = 'Invalid range'; return; }
+    if (count > (max - min + 1)) { rolling.textContent = 'Winners > range'; return; }
+
+    isRunning = true;
+
+    // Pick unique winners using crypto.getRandomValues (system entropy)
+    const winners = [];
+    const pool = [];
+    for (let i = min; i <= max; i++) pool.push(i);
+    for (let i = 0; i < count; i++) {
+      const idx = secureRandom(pool.length);
+      winners.push(pool[idx]);
+      pool.splice(idx, 1);
+    }
+
+    // Rolling animation
+    let tick = 0;
+    const totalTicks = 30;
+    const interval = setInterval(() => {
+      const fake = min + secureRandom(max - min + 1);
+      rolling.textContent = fake;
+      tick++;
+      if (tick >= totalTicks) {
+        clearInterval(interval);
+        rolling.textContent = winners.join('  ');
+        isRunning = false;
+
+        // Add to history
+        historyEl.style.display = 'block';
+        const round = document.createElement('span');
+        round.className = 'history-item';
+        round.textContent = winners.join(', ');
+        historyList.prepend(round);
+      }
+    }, 60);
+  };
+</script>
+</body>
+</html>
