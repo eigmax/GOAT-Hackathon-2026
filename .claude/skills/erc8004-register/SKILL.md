@@ -65,7 +65,7 @@ This creates a wallet at `~/.evm-wallet.json` and returns the wallet address. Su
 
 ### 2. Fund the Wallet
 
-Registering an agent requires gas (approximately 0.0004 BTC for registration + 0.00025 BTC for setAgentURI).
+Registering an agent requires gas (approximately **0.00013 BTC** total for registration + setAgentURI).
 
 **Testnet** — Use the web faucet: https://bridge.testnet3.goat.network/faucet
 - Paste your wallet address and claim multiple times until you have at least **0.001 BTC**
@@ -313,11 +313,13 @@ cd "$SKILL_DIR" && node src/contract.js goat-testnet \
 
 | Action | Estimated Gas | Estimated Cost |
 |--------|--------------|----------------|
-| `register(string)` | ~156,000 | ~0.0004 BTC |
-| `setAgentURI(uint256,string)` | ~123,000 | ~0.00025 BTC |
-| `setMetadata(uint256,string,bytes)` | ~80,000 | ~0.00016 BTC |
-| `giveFeedback(...)` | ~150,000 | ~0.0003 BTC |
-| `revokeFeedback(...)` | ~50,000 | ~0.0001 BTC |
+| `register(string)` | ~156,000 | ~0.00002 BTC |
+| `setAgentURI(uint256,string)` | ~123,000 | ~0.000016 BTC |
+| `setMetadata(uint256,string,bytes)` | ~80,000 | ~0.00001 BTC |
+| `giveFeedback(...)` | ~150,000 | ~0.00002 BTC |
+| `revokeFeedback(...)` | ~50,000 | ~0.000007 BTC |
+
+> Gas price on GOAT Network is very low (~0.1 gwei). Total cost for a full registration flow (register + setAgentURI) is approximately **0.00013 BTC**.
 
 > Gas costs vary with URI/data length. Shorter strings = less gas.
 
