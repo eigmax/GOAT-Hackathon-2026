@@ -27,3 +27,7 @@ python3 -m http.server 8000
 ```
 
 Open http://localhost:8000/ for the dashboard, http://localhost:8000/register.html to register an agent.
+
+## Acknowledgments
+
+Special thanks to [@yayashuxue](https://github.com/yayashuxue) for building the initial prototype of this project.
