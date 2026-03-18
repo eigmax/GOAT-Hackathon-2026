@@ -219,7 +219,7 @@ async function loadAgents() {
 
     const added = next.filter(a=>!agents.find(b=>b.agentId===a.agentId&&b.chain===a.chain))
     if (initialLoadDone) added.forEach(a=>toast(`🪪 Agent #${a.agentId}: ${a.name}`, 'y'))
-    agents = next
+    agents = next.sort((a,b)=>b.block-a.block)
     renderAgents()
     updateStats()
 

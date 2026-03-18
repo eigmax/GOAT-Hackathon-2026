@@ -162,15 +162,44 @@ The Agent URI is the key to making your agent discoverable on-chain. For x402 me
 
 ### Hosting the JSON
 
-The Agent URI must be a publicly accessible URL. Options:
+The Agent URI must be resolvable. There are two approaches:
 
-1. **GitHub Gist (recommended for testing)**:
+#### Option A: Inline Base64 (recommended — no CORS issues, no external dependency)
+
+Encode the JSON as a `data:` URI. The dashboard can parse it directly from chain data without fetching external URLs.
+
+```bash
+JSON='{"name":"MyAgent","description":"my agent","type":"merchant","x402":{"merchantId":"xxx"}}'
+B64=$(echo -n "$JSON" | base64 | tr -d '\n')
+URI="data:application/json;base64,${B64}"
+```
+
+> **Gas optimization**: Inline URIs are stored entirely on-chain, so **keep the JSON minimal**. Only include essential fields (`name`, `description`, `type`, `x402.merchantId`, `x402.receiveType`). Avoid nesting large objects or including redundant data. Every byte costs gas — a 200-byte JSON costs roughly half the gas of a 1000-byte JSON.
+
+**Minimal JSON example (gas-efficient):**
+```json
+{
+  "name": "MyMerchant",
+  "description": "x402 merchant",
+  "type": "merchant",
+  "x402": {
+    "merchantId": "my-id",
+    "receiveType": "DIRECT",
+    "chainId": 48816,
+    "token": "USDC"
+  }
+}
+```
+
+#### Option B: External URL (cheaper gas, but depends on external hosting)
+
+1. **GitHub Gist**:
    ```bash
    gh gist create --public -f "agent.json" agent.json
    # Use the raw URL: https://gist.githubusercontent.com/<user>/<gist_id>/raw/agent.json
    ```
 
-2. **IPFS** (recommended for production):
+2. **IPFS**:
    ```
    ipfs://QmXxxxx...
    ```
@@ -180,7 +209,7 @@ The Agent URI must be a publicly accessible URL. Options:
    https://your-domain.com/agent.json
    ```
 
-> **Tip**: Use shorter URLs to save gas when writing on-chain. IPFS hashes or short URLs are more gas-efficient than long GitHub Gist URLs.
+> **Note**: External URLs have lower gas cost (only the URL is stored on-chain), but may fail due to CORS restrictions, downtime, or URL changes. If the dashboard cannot fetch the URL, the agent name will display as "Agent #<agentId>".
 
 ## Step 3: Update Agent URI
 
