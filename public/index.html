@@ -145,6 +145,7 @@ const IDENTITY_TESTNET = '0x556089008Fc0a60cD09390Eca93477ca254A5522'
 const USDC     = '0x29d1ee93e9ecf6e50f309f498e40a6b42d352fa1'
 const USDT     = '0xdce0af57e8f2ce957b3838cd2a2f3f3677965dd3'
 const REG_TOPIC = '0xca52e62c367d81bb2e328eb795f7c7ba24afb478408a26c0e201d155c449bc4a'
+const URI_TOPIC = '0x3a2c7fffc2cba7582c690e3b82c453ea02a308326a98a3ad7576c606336409fb'
 
 let agents = [], agentWallets = new Set()
 let transfers = [], agentTxs = [], seenHashes = new Set()
@@ -180,16 +181,46 @@ async function rpcTestnet(method, params=[]) {
 async function loadAgents() {
   try {
     // Load from both mainnet + testnet3
-    const [mainnetLogs, testnetLogs] = await Promise.all([
+    const [mainnetLogs, testnetLogs, mainnetUriLogs, testnetUriLogs] = await Promise.all([
       rpc('eth_getLogs', [{address:IDENTITY_MAINNET,fromBlock:'0x0',toBlock:'latest',topics:[REG_TOPIC]}]),
       rpcTestnet('eth_getLogs', [{address:IDENTITY_TESTNET,fromBlock:'0x0',toBlock:'latest',topics:[REG_TOPIC]}]),
+      rpc('eth_getLogs', [{address:IDENTITY_MAINNET,fromBlock:'0x0',toBlock:'latest',topics:[URI_TOPIC]}]),
+      rpcTestnet('eth_getLogs', [{address:IDENTITY_TESTNET,fromBlock:'0x0',toBlock:'latest',topics:[URI_TOPIC]}]),
     ])
     const allLogs = [
       ...(mainnetLogs||[]).map(l=>({...l,_chain:'mainnet',_identity:IDENTITY_MAINNET})),
       ...(testnetLogs||[]).map(l=>({...l,_chain:'testnet3',_identity:IDENTITY_TESTNET})),
     ]
+    // Build a map of latest URI per agentId+chain from setAgentURI events
+    const uriUpdates = {}
+    for (const l of [...(mainnetUriLogs||[]).map(l=>({...l,_chain:'mainnet'})), ...(testnetUriLogs||[]).map(l=>({...l,_chain:'testnet3'}))]) {
+      const aid = parseInt(l.topics[1],16).toString()
+      const blk = parseInt(l.blockNumber,16)
+      const key = aid+'_'+l._chain
+      if (!uriUpdates[key] || blk > uriUpdates[key].block) {
+        uriUpdates[key] = {block:blk, log:l}
+      }
+    }
     const logs = allLogs
     if (!logs?.length) { renderAgents(); return }
+
+    function parseUri(log) {
+      const hex = log.data.slice(2)
+      const len = parseInt(hex.slice(64,128),16)
+      const raw = hex.slice(128, 128+len*2)
+      return decodeURIComponent(raw.match(/.{2}/g).map(b=>'%'+b).join(''))
+    }
+    function parseJson(uri) {
+      let name='', desc='', x402=false, svcs=[]
+      if (uri.startsWith('data:application/json;base64,')) {
+        const j = JSON.parse(atob(uri.split(',')[1]))
+        name=j.name||''; desc=j.description||''; x402=j.x402Support||j.x402||false; svcs=j.services||[]
+      } else if (uri.startsWith('{')) {
+        const j = JSON.parse(uri)
+        name=j.name||''; desc=j.description||''; x402=j.x402Support||j.x402||false; svcs=j.services||[]
+      }
+      return {name,desc,x402,svcs}
+    }
 
     const next = []
     for (const log of logs) {
@@ -197,21 +228,21 @@ async function loadAgents() {
       const owner   = '0x'+log.topics[2].slice(26)
       const block   = parseInt(log.blockNumber,16)
       const txHash  = log.transactionHash
-      let name=`Agent #${agentId}`, desc='', x402=false, svcs=[], uri=''
-      try {
-        const hex = log.data.slice(2)
-        const len = parseInt(hex.slice(64,128),16)
-        const raw = hex.slice(128, 128+len*2)
-        uri = decodeURIComponent(raw.match(/.{2}/g).map(b=>'%'+b).join(''))
-        if (uri.startsWith('data:application/json;base64,')) {
-          const j = JSON.parse(atob(uri.split(',')[1]))
-          name=j.name||name; desc=j.description||''; x402=j.x402Support||false; svcs=j.services||[]
-        } else if (uri.startsWith('{')) {
-          const j = JSON.parse(uri)
-          name=j.name||name; desc=j.description||''; x402=j.x402Support||false; svcs=j.services||[]
-        }
-      } catch {}
       const chain = log._chain || 'mainnet'
+      let name=`Agent #${agentId}`, desc='', x402=false, svcs=[], uri=''
+      // Use latest URI: prefer setAgentURI event over register event
+      const uriKey = agentId+'_'+chain
+      const latestUriLog = uriUpdates[uriKey]
+      try {
+        if (latestUriLog) {
+          uri = parseUri(latestUriLog.log)
+        } else {
+          uri = parseUri(log)
+        }
+        const parsed = parseJson(uri)
+        if (parsed.name) name = parsed.name
+        desc = parsed.desc; x402 = parsed.x402; svcs = parsed.svcs
+      } catch {}
       const explorerBase = chain==='testnet3' ? 'https://explorer.testnet3.goat.network' : 'https://explorer.goat.network'
       agentWallets.add(owner.toLowerCase())
       next.push({agentId,owner,name,desc,x402,svcs,block,txHash,chain,explorerBase,uri})
